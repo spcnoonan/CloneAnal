@@ -293,7 +293,7 @@ echo
 
 # Removing variants for which there are more than 1 alternate alleles and are present in either both parental strains or neither
 
-var_filt="python3 $SCRIPTS/var_filter.sh SNP_INDEL_Sorted.vcf SNP_INDEL_Processed.vcf"
+var_filt="python3 $SCRIPTS/var_filter.py SNP_INDEL_Sorted.vcf SNP_INDEL_Processed.vcf"
 echo $var_filt
 eval $var_filt
 echo
