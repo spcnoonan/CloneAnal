@@ -65,8 +65,7 @@ INTLIST=/storage/users/cnoonan22/experiments/EXP0001/Resources/GenomeDB/ETenRef.
 # Path to SnpEFF JAR file
 SNPEFF=/storage/users/cnoonan22/experiments/EXP0001/Bin/snpEff/snpEff.jar
 # SnpEFF database name
-SNPEFFDATABASE=/storage/users/cnoonan22/experiments/EXP0001/Bin/snpEff/data/pEimTen1.1
-# Path to refere
+SNPEFFDATABASE=pEimTen1.1
 
 
 #........................................................
