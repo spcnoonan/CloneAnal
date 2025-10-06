@@ -64,6 +64,8 @@ SMAP=/storage/users/cnoonan22/experiments/EXP0001/Resources/GenomeDB/clone.sampl
 INTLIST=/storage/users/cnoonan22/experiments/EXP0001/Resources/GenomeDB/ETenRef.intervals
 # Path to SnpEFF JAR file
 SNPEFF=/storage/users/cnoonan22/experiments/EXP0001/Bin/snpEff/snpEff.jar
+# Path to SnpSift JAR file
+SNPSIFT=/storage/users/cnoonan22/experiments/EXP0001/Bin/snpEff/SnpSift.jar
 # SnpEFF database name
 SNPEFFDATABASE=pEimTen1.1
 
@@ -179,7 +181,8 @@ for file_R1 in "$READS"/*_R1_001.fastq.gz; do
         VARIANT=$CLONE_DIR/VariantCalling
         mkdir -p $VARIANT
         cd $VARIANT
-        varcall="$GATK --java-options "-Xmx64g" HaplotypeCaller -R $REF -I $ALIGNMENT/${ID}VsRef_MD.bam -O ${ID}VsRef.g.vcf -ploidy 1 -ERC GVCF -bamout ${ID}_HC_Haplotypes.bam 2>&1 | tee $CLONE_LOGS/HaplotypeCaller.txt"
+        #varcall="$GATK --java-options "-Xmx64g" HaplotypeCaller -R $REF -I $ALIGNMENT/${ID}VsRef_MD.bam -O ${ID}VsRef.g.vcf -ploidy 1 -ERC GVCF -bamout ${ID}_HC_Haplotypes.bam 2>&1 | tee $CLONE_LOGS/HaplotypeCaller.txt"
+        varcall="$GATK --java-options "-Xmx64g" HaplotypeCaller -R $REF -I $ALIGNMENT/${ID}VsRef_MD.bam -O ${ID}VsRef.g.vcf --min-pruning 1 --min-dangling-branch-length 1 -ploidy 1 -ERC GVCF -bamout ${ID}_HC_Haplotypes.bam 2>&1 | tee $CLONE_LOGS/HaplotypeCaller.txt"
         echo $varcall
         eval $varcall
 
@@ -305,14 +308,49 @@ echo
 #			VARIANT ANNOTATION 
 #........................................................
 
-# # SnpEFF annotation of SNP and INDEL filtered files
-# cd $FILTERED
-# echo "Annotating filtered SNP and INDEL VCF files ..."
-# snpeffsnp="java -Xmx64g -jar $SNPEFF $SNPEFFDATABASE FilteredCombinedSNPs.vcf -stats $STATS/SNP_stats.html > FilteredCombinedSNPs_ann.vcf"
-# echo $snpeffsnp
-# eval $snpeffsnp
-# snpeffindel="java -Xmx64g -jar $SNPEFF $SNPEFFDATABASE FilteredCombinedINDELs.vcf -stats $STATS/INDEL_stats.html > FilteredVariants_INDELs_ann.vcf"
-# echo $snpeffsnp
-# eval $snpeffsnp
-# echo
-# echo "Annotation complete"
+ANNOT=$COMBO/AnnotatedVars
+mkdir -p $ANNOT
+
+cd $ANNOT
+echo "Annotating SNP_INDEL_Processed.vcf ..."
+
+java -Xmx64g -jar $SNPEFF -v -o vcf -no-downstream -no-intergenic -no-intron -no-upstream -no-utr -stats $STATS/SNP_stats.html $SNPEFFDATABASE $FILT/SNP_INDEL_Processed.vcf > SNP_INDEL_Processed_Coding.ann.vcf
+java -Xmx64g -jar $SNPEFF -v -o vcf -no-downstream -no-intergenic -no-upstream -stats $STATS/SNP_stats.html $SNPEFFDATABASE $FILT/SNP_INDEL_Processed.vcf > SNP_INDEL_Processed_Genic.ann.vcf
+java -Xmx64g -jar $SNPEFF -v -o vcf -stats $STATS/SNP_stats.html $SNPEFFDATABASE $FILT/SNP_INDEL_Processed.vcf > SNP_INDEL_Processed_All.ann.vcf
+
+$GATK IndexFeatureFile -I SNP_INDEL_Processed_Coding.ann.vcf
+$GATK IndexFeatureFile -I SNP_INDEL_Processed_Genic.ann.vcf
+$GATK IndexFeatureFile -I SNP_INDEL_Processed_All.ann.vcf
+
+echo
+echo "Annotation complete"
+echo
+
+WEYVARS=$ANNOT/WeybridgeVars
+WISVARS=$ANNOT/WisconsinVars
+mkdir -p $WEYVARS
+mkdir -p $WISVARS
+
+echo "Splitting variants into Weybridge-derived and Wisconsin-derived ..."
+$SCRIPTS/var_split.py SNP_INDEL_Processed_Coding.ann.vcf
+mv WeyVars.vcf $WEYVARS/WeyVars_Coding.vcf
+mv WisVars.vcf $WISVARS/WisVars_Coding.vcf
+$GATK IndexFeatureFile -I $WEYVARS/WeyVars_Coding.vcf
+$GATK IndexFeatureFile -I $WISVARS/WisVars_Coding.vcf
+
+$SCRIPTS/var_split.py SNP_INDEL_Processed_Genic.ann.vcf
+mv WeyVars.vcf $WEYVARS/WeyVars_Genic.vcf
+mv WisVars.vcf $WISVARS/WisVars_Genic.vcf
+$GATK IndexFeatureFile -I $WEYVARS/WeyVars_Genic.vcf
+$GATK IndexFeatureFile -I $WISVARS/WisVars_Genic.vcf
+
+$SCRIPTS/var_split.py SNP_INDEL_Processed_All.ann.vcf
+mv WeyVars.vcf $WEYVARS/WeyVars_All.vcf
+mv WisVars.vcf $WISVARS/WisVars_All.vcf
+$GATK IndexFeatureFile -I $WEYVARS/WeyVars_All.vcf
+$GATK IndexFeatureFile -I $WISVARS/WisVars_All.vcf
+
+# Extracting only the protein-coding variants
+cat $WEYVARS/WeyVars_Coding.vcf | java -jar $SNPSIFT filter "ANN[0].FEATURE has 'transcript'" > $WEYVARS/WeyPCVars_only.vcf
+cat $WISVARS/WisVars_Coding.vcf | java -jar $SNPSIFT filter "ANN[0].FEATURE has 'transcript'" > $WISVARS/WisPCVars_only.vcf
+
