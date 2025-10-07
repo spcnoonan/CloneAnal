@@ -182,7 +182,7 @@ for file_R1 in "$READS"/*_R1_001.fastq.gz; do
         mkdir -p $VARIANT
         cd $VARIANT
         #varcall="$GATK --java-options "-Xmx64g" HaplotypeCaller -R $REF -I $ALIGNMENT/${ID}VsRef_MD.bam -O ${ID}VsRef.g.vcf -ploidy 1 -ERC GVCF -bamout ${ID}_HC_Haplotypes.bam 2>&1 | tee $CLONE_LOGS/HaplotypeCaller.txt"
-        varcall="$GATK --java-options "-Xmx64g" HaplotypeCaller -R $REF -I $ALIGNMENT/${ID}VsRef_MD.bam -O ${ID}VsRef.g.vcf --min-pruning 1 --min-dangling-branch-length 1 -ploidy 1 -ERC GVCF -bamout ${ID}_HC_Haplotypes.bam 2>&1 | tee $CLONE_LOGS/HaplotypeCaller.txt"
+        varcall="$GATK --java-options "-Xmx64g" HaplotypeCaller -R $REF -I $ALIGNMENT/${ID}VsRef_MD.bam -O ${ID}VsRef.g.vcf --min-pruning 0 --min-dangling-branch-length 1 -ploidy 1 -ERC GVCF -bamout ${ID}_HC_Haplotypes.bam 2>&1 | tee $CLONE_LOGS/HaplotypeCaller.txt"
         echo $varcall
         eval $varcall
 
@@ -332,19 +332,19 @@ mkdir -p $WEYVARS
 mkdir -p $WISVARS
 
 echo "Splitting variants into Weybridge-derived and Wisconsin-derived ..."
-$SCRIPTS/var_split.py SNP_INDEL_Processed_Coding.ann.vcf
+python3 $SCRIPTS/var_split.py SNP_INDEL_Processed_Coding.ann.vcf
 mv WeyVars.vcf $WEYVARS/WeyVars_Coding.vcf
 mv WisVars.vcf $WISVARS/WisVars_Coding.vcf
 $GATK IndexFeatureFile -I $WEYVARS/WeyVars_Coding.vcf
 $GATK IndexFeatureFile -I $WISVARS/WisVars_Coding.vcf
 
-$SCRIPTS/var_split.py SNP_INDEL_Processed_Genic.ann.vcf
+python3 $SCRIPTS/var_split.py SNP_INDEL_Processed_Genic.ann.vcf
 mv WeyVars.vcf $WEYVARS/WeyVars_Genic.vcf
 mv WisVars.vcf $WISVARS/WisVars_Genic.vcf
 $GATK IndexFeatureFile -I $WEYVARS/WeyVars_Genic.vcf
 $GATK IndexFeatureFile -I $WISVARS/WisVars_Genic.vcf
 
-$SCRIPTS/var_split.py SNP_INDEL_Processed_All.ann.vcf
+python3 $SCRIPTS/var_split.py SNP_INDEL_Processed_All.ann.vcf
 mv WeyVars.vcf $WEYVARS/WeyVars_All.vcf
 mv WisVars.vcf $WISVARS/WisVars_All.vcf
 $GATK IndexFeatureFile -I $WEYVARS/WeyVars_All.vcf
