@@ -26,7 +26,4 @@ def filter_wey_wis_variants(input_vcf, output_vcf, wey_wis_samples):
 
 # Replace 'input.vcf' and 'output.vcf' with your input and output file names
 # Replace [9, 10] with the column indices of 'Wey' and 'Wis' samples (0-based index)
-filter_wey_wis_variants(sys.argv[1], sys.argv[2], [27, 28])
-
-
-
+filter_wey_wis_variants(sys.argv[1], sys.argv[2], [9, 10])
